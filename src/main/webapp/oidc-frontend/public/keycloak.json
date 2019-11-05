@@ -1,0 +1,8 @@
+{
+  "realm": "quarkus",
+  "auth-server-url": "http://localhost:8000/auth",
+  "ssl-required": "external",
+  "resource": "quarkus",
+  "public-client": true,
+  "confidential-port": 0
+}

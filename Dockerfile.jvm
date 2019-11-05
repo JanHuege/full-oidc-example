@@ -1,0 +1,41 @@
+####
+# This Dockerfile is used in order to build a container that runs the Quarkus application in JVM mode
+#
+# Before building the docker image run:
+#
+# mvn package
+#
+# Then, build the image with:
+#
+# docker build -f src/main/docker/Dockerfile.jvm -t quarkus/oidc-example-jvm .
+#
+# Then run the container using:
+#
+# docker run -i --rm -p 8080:8080 quarkus/oidc-example-jvm
+#
+###
+FROM fabric8/java-alpine-openjdk8-jre
+ENV JAVA_OPTIONS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV AB_ENABLED=jmx_exporter
+ENV CLIENT_ID=quarkus
+ENV KEYCLOAK_URL=http://127.0.0.1:8000
+ENV DOCKERIZE_VERSION v0.6.1
+COPY target/lib/* /deployments/lib/
+COPY target/*-runner.jar /deployments/app.jar
+EXPOSE 8080
+
+USER root
+RUN apk add --no-cache openssl
+
+RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
+    && tar -C /usr/local/bin -xzvf dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
+    && rm dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+
+# run with user 1001 and be prepared for be running in OpenShift too
+RUN adduser -G root --no-create-home --disabled-password 1001 \
+  && chown -R 1001 /deployments \
+  && chmod -R "g+rwX" /deployments \
+  && chown -R 1001:root /deployments
+USER 1001
+
+ENTRYPOINT [ "/deployments/run-java.sh" ]
